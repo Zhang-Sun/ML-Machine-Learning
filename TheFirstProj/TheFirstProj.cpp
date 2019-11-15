@@ -24,9 +24,9 @@ int main()
     for(i=0;i<5;i++)
     {
         cin>>course[i];
-        cout<<"input NO. and scores:"<<endl;
-        cout<<"NO.";
     }
+    cout<<"input NO. and scores:"<<endl;
+    cout<<"NO.";
     for(i=0;i<5;i++)
     {
         cout<<","<<course[i]<<endl;

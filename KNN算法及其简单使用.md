@@ -737,6 +737,517 @@ if __name__ == '__main__':
     [0.       0.       0.001156]
 
 
+以上我们已经成功将数据进行归一化了，同时求出了取值范围和最小值
+
+## 2.5 测试算法：验证分类器
+
+机器学习算法一个很重要的任务就是评估算法的正确率。通常我们只提供已有数据的90%作为训练样本，而其余的10%作为测试数据检测分类器的正确率。需要注意的是，10%的数据应该是随机选取的。基于海伦的数据没有目的性的排序，我们可以随意的选出10%的数据进行测试。
+
+为了测试，我们使用datingClassTest函数如下：
+
+
+```python
+# -*- coding:UTF-8 -*-
+import numpy as np
+import operator
+"""
+函数说明：KNN算法，分类器
+
+Parameters：
+        inX -用于分类的数据
+        dataSet -用于训练的数据
+        labels -分类标签
+        k - KNN算法参数，选择距离最近的k个点
+        
+Returns：
+        sortedClassCount[0][0] -分类结果
+        
+Create ：
+        2020-4-10
+"""
+
+def classify0(inX, dataSet, labels, k):
+    #numpy函数shape[0]返回dataSet行数
+    dataSetSize = dataSet.shape[0]
+    #在列向量方向上重复inX共一次（横向），行向量上重估复inX共dataSetSize次（纵向）。
+    diffMat = np.tile(inX, (dataSetSize, 1)) - dataSet
+    #二维特征相减后平方
+    sqDiffMat = diffMat **2
+    #sum()所有元素相加，sum(0)列相加，sum(1)行想加。
+    sqDistances = sqDiffMat.sum(axis=1)
+    #开方，计算出距离
+    distances = sqDistances**0.5
+    #返回distances 中元素从小到大排序后的索引值
+    sortedDistIndices = distances.argsort()
+    #定一个记录类别次数的字典
+    classCount = {}
+    for i in range(k):
+        #取出前k个元素的类别
+        voteIlabel = labels[sortedDistIndices[i]]
+        #dict.get(key,default=None),字典的get方法，返回指定键的值，如果值不在字典中返回默认值
+        #计算类别次数
+        classCount[voteIlabel] = classCount.get(voteIlabel,0)+1
+    #python3中的items()函数代替python2中的iteritems()函数
+    #key=operator.itemgetter(1)根据字典的值进行排序
+    #key = operator.itemgetter(0)根据字典的键进行排序
+    #reverse降序排序字典
+    sortedClassCount = sorted(classCount.items(),key = operator.itemgetter(1),reverse=True)
+    #返回次数最多的类别，即所要分类的类别
+    return sortedClassCount[0][0]
+"""
+函数说明：打开并解析数据文件、对数据进行分类：1代表不喜欢，2代表魅力一般，3代表极具魅力。
+
+Parameters:
+        filename -文件名
+Returns：
+        returnMat - 特征矩阵
+        classLabelVector - 分类Label向量
+    
+Create：
+        2020-4-10
+"""
+
+def file2matrix(filename):
+    #打开文件
+    with open(filename) as fr:
+        #读取文件内容
+        arrayOLines = fr.readlines()
+        #得到文件的行数
+        numberOfLines = len(arrayOLines)
+        #返回的Numpy矩阵，解析完成的数据：numberOfLines行，3列
+        returnMat = np.zeros((numberOfLines,3))
+        #返回的分类标签向量
+        classLabelVector = []
+        #行的索引值
+        index = 0
+        for line in arrayOLines:
+            #s.strip(rm),当rm为空时，默认删除空白符（包括‘\n’,'\r','\t',' '）
+            line = line.strip()
+            #使用s.split(str = "",num=string,cout(str))将字符串根据‘\t’分隔符进行切片
+            listFromLine = line.split('\t')
+            #将前三列提取出来放入特征矩阵中
+            returnMat[index,:] = listFromLine[0:3]
+            #根据文本中的标记的喜欢程度进行分类
+            if listFromLine[-1] == 'didntLike':
+                classLabelVector.append(1)
+            elif listFromLine[-1] == 'smallDoses':
+                classLabelVector.append(2)
+            elif listFromLine[-1] == 'largeDoses':
+                classLabelVector.append(3)
+            index += 1
+    return returnMat,classLabelVector
+
+"""
+函数说明:对数据进行归一化
+
+Parameters:
+    dataSet - 特征矩阵
+Returns:
+    normDataSet - 归一化后的特征矩阵
+    ranges - 数据范围
+    minVals - 数据最小值
+
+Modify:
+    2020-04-10
+"""
+def autoNorm(dataSet):
+    #获得数据的最小值
+    minVals = dataSet.min(0)
+    maxVals = dataSet.max(0)
+    #最大值和最小值的范围
+    ranges = maxVals - minVals
+    #shape(dataSet)返回dataSet的矩阵行列数
+    normDataSet = np.zeros(np.shape(dataSet))
+    #返回dataSet的行数
+    m = dataSet.shape[0]
+    #原始值减去最小值
+    normDataSet = dataSet - np.tile(minVals, (m, 1))
+    #除以最大和最小值的差,得到归一化数据
+    normDataSet = normDataSet / np.tile(ranges, (m, 1))
+    #返回归一化数据结果,数据范围,最小值
+    return normDataSet, ranges, minVals
+
+"""
+函数说明： 分类器测试函数
+
+Parameters：
+        None
+
+Returns：
+        normDataSet -归一化后的特征矩阵
+        ranges - 数据范围
+        minVals -数据最小值
+        
+Create：
+        2020-4-10
+"""
+def datingClassTest():
+    #打开的文件名
+    filename = "datingTestSet.txt"
+    #将返回的特征矩阵和分类向量分别存储到datingDataMat和datingLabels中
+    datingDataMat, datingLabels = file2matrix(filename)
+    #取所有数据的10%
+    hoRatio = 0.1
+    #将数据归一化，返回归一化后的特征矩阵，数值范围，数据最小值
+    normMat, ranges, minVals = autoNorm(datingDataMat)
+    #获得normMat的行数
+    m = normMat.shape[0]
+    #10%的测试数据的个数
+    numTestVecs = int(m * hoRatio)
+    #分类错误计数
+    errorCount = 0.0
+    
+    for i in range(numTestVecs):
+        #前numTestVecs个数作为测试句，后m-numTestVecs个数作为训练集
+        classifierResult = classify0(normMat[i,:], normMat[numTestVecs:m,:],datingLabels[numTestVecs:m], 4)
+        print("分类结果：%d\t真实类别：%d" % (classifierResult, datingLabels[i]))
+        if classifierResult != datingLabels[i] :
+            errorCount += 1.0
+    print("错误率：%f%%" % (errorCount/float(numTestVecs)*100))
+    
+"""
+函数说明： main函数
+
+Parameters：
+        None
+        
+Returns：
+        None
+
+Create：
+        2020-4-10
+        
+"""
+if __name__=="__main__":
+    datingClassTest()
+```
+
+    分类结果：3	真实类别：3
+    分类结果：2	真实类别：2
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：3	真实类别：3
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：2	真实类别：2
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：2	真实类别：2
+    分类结果：1	真实类别：1
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：3	真实类别：3
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：2
+    分类结果：1	真实类别：1
+    分类结果：3	真实类别：3
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：1
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：3	真实类别：3
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：3	真实类别：3
+    分类结果：3	真实类别：1
+    分类结果：3	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：2
+    分类结果：1	真实类别：1
+    分类结果：1	真实类别：1
+    分类结果：3	真实类别：3
+    分类结果：2	真实类别：3
+    分类结果：1	真实类别：1
+    分类结果：2	真实类别：2
+    分类结果：1	真实类别：1
+    分类结果：3	真实类别：3
+    分类结果：3	真实类别：3
+    分类结果：2	真实类别：2
+    分类结果：2	真实类别：1
+    分类结果：1	真实类别：1
+    错误率：4.000000%
+
+
+从分类结果可以看到，错误率是4%，我们可以更改分类器中的hoRatio和k的值，检测错误率是否发生变化。依赖分类算法、数据集和程序设置，分类器的输出结果有可能有很大的不同。
+
+## 2.6 使用算法：构建完整可用的系统
+
+我们设置一个系统，通过该系统输入约会网站上某个人的信息，程序会给出她对对方喜欢程度的预测值。创建函数classufyPerson完成系统创建。
+
+
+```python
+# -*- coding:UTF-8 -*-
+import numpy as np
+import operator
+"""
+函数说明：KNN算法，分类器
+
+Parameters：
+        inX -用于分类的数据
+        dataSet -用于训练的数据
+        labels -分类标签
+        k - KNN算法参数，选择距离最近的k个点
+        
+Returns：
+        sortedClassCount[0][0] -分类结果
+        
+Create ：
+        2020-4-10
+"""
+
+def classify0(inX, dataSet, labels, k):
+    #numpy函数shape[0]返回dataSet行数
+    dataSetSize = dataSet.shape[0]
+    #在列向量方向上重复inX共一次（横向），行向量上重估复inX共dataSetSize次（纵向）。
+    diffMat = np.tile(inX, (dataSetSize, 1)) - dataSet
+    #二维特征相减后平方
+    sqDiffMat = diffMat **2
+    #sum()所有元素相加，sum(0)列相加，sum(1)行想加。
+    sqDistances = sqDiffMat.sum(axis=1)
+    #开方，计算出距离
+    distances = sqDistances**0.5
+    #返回distances 中元素从小到大排序后的索引值
+    sortedDistIndices = distances.argsort()
+    #定一个记录类别次数的字典
+    classCount = {}
+    for i in range(k):
+        #取出前k个元素的类别
+        voteIlabel = labels[sortedDistIndices[i]]
+        #dict.get(key,default=None),字典的get方法，返回指定键的值，如果值不在字典中返回默认值
+        #计算类别次数
+        classCount[voteIlabel] = classCount.get(voteIlabel,0)+1
+    #python3中的items()函数代替python2中的iteritems()函数
+    #key=operator.itemgetter(1)根据字典的值进行排序
+    #key = operator.itemgetter(0)根据字典的键进行排序
+    #reverse降序排序字典
+    sortedClassCount = sorted(classCount.items(),key = operator.itemgetter(1),reverse=True)
+    #返回次数最多的类别，即所要分类的类别
+    return sortedClassCount[0][0]
+"""
+函数说明：打开并解析数据文件、对数据进行分类：1代表不喜欢，2代表魅力一般，3代表极具魅力。
+
+Parameters:
+        filename -文件名
+Returns：
+        returnMat - 特征矩阵
+        classLabelVector - 分类Label向量
+    
+Create：
+        2020-4-10
+"""
+
+def file2matrix(filename):
+    #打开文件
+    with open(filename) as fr:
+        #读取文件内容
+        arrayOLines = fr.readlines()
+        #得到文件的行数
+        numberOfLines = len(arrayOLines)
+        #返回的Numpy矩阵，解析完成的数据：numberOfLines行，3列
+        returnMat = np.zeros((numberOfLines,3))
+        #返回的分类标签向量
+        classLabelVector = []
+        #行的索引值
+        index = 0
+        for line in arrayOLines:
+            #s.strip(rm),当rm为空时，默认删除空白符（包括‘\n’,'\r','\t',' '）
+            line = line.strip()
+            #使用s.split(str = "",num=string,cout(str))将字符串根据‘\t’分隔符进行切片
+            listFromLine = line.split('\t')
+            #将前三列提取出来放入特征矩阵中
+            returnMat[index,:] = listFromLine[0:3]
+            #根据文本中的标记的喜欢程度进行分类
+            if listFromLine[-1] == 'didntLike':
+                classLabelVector.append(1)
+            elif listFromLine[-1] == 'smallDoses':
+                classLabelVector.append(2)
+            elif listFromLine[-1] == 'largeDoses':
+                classLabelVector.append(3)
+            index += 1
+    return returnMat,classLabelVector
+
+"""
+函数说明:对数据进行归一化
+
+Parameters:
+    dataSet - 特征矩阵
+Returns:
+    normDataSet - 归一化后的特征矩阵
+    ranges - 数据范围
+    minVals - 数据最小值
+
+Modify:
+    2020-04-10
+"""
+def autoNorm(dataSet):
+    #获得数据的最小值
+    minVals = dataSet.min(0)
+    maxVals = dataSet.max(0)
+    #最大值和最小值的范围
+    ranges = maxVals - minVals
+    #shape(dataSet)返回dataSet的矩阵行列数
+    normDataSet = np.zeros(np.shape(dataSet))
+    #返回dataSet的行数
+    m = dataSet.shape[0]
+    #原始值减去最小值
+    normDataSet = dataSet - np.tile(minVals, (m, 1))
+    #除以最大和最小值的差,得到归一化数据
+    normDataSet = normDataSet / np.tile(ranges, (m, 1))
+    #返回归一化数据结果,数据范围,最小值
+    return normDataSet, ranges, minVals
+
+"""
+函数说明： 分类器测试函数
+
+Parameters：
+        None
+
+Returns：
+        normDataSet -归一化后的特征矩阵
+        ranges - 数据范围
+        minVals -数据最小值
+        
+Create：
+        2020-4-10
+"""
+def datingClassTest():
+    #打开的文件名
+    filename = "datingTestSet.txt"
+    #将返回的特征矩阵和分类向量分别存储到datingDataMat和datingLabels中
+    datingDataMat, datingLabels = file2matrix(filename)
+    #取所有数据的10%
+    hoRatio = 0.1
+    #将数据归一化，返回归一化后的特征矩阵，数值范围，数据最小值
+    normMat, ranges, minVals = autoNorm(datingDataMat)
+    #获得normMat的行数
+    m = normMat.shape[0]
+    #10%的测试数据的个数
+    numTestVecs = int(m * hoRatio)
+    #分类错误计数
+    errorCount = 0.0
+    
+    for i in range(numTestVecs):
+        #前numTestVecs个数作为测试句，后m-numTestVecs个数作为训练集
+        classifierResult = classify0(normMat[i,:], normMat[numTestVecs:m,:],datingLabels[numTestVecs:m], 4)
+        print("分类结果：%d\t真实类别：%d" % (classifierResult, datingLabels[i]))
+        if classifierResult != datingLabels[i] :
+            errorCount += 1.0
+    print("错误率：%f%%" % (errorCount/float(numTestVecs)*100))
+
+"""
+函数说明：通过输入一个人的三维特征，进行分类输出
+
+Parameters：
+        None
+
+Returns：
+        None
+        
+Create：
+        2020-4-10
+"""
+def classifyPerson():
+    #输出结果
+    resultList = ['讨厌','有些喜欢','非常喜欢']
+    percentTats = float(input("玩视频游戏所耗时间的百分比:"))
+    ffMiles = float(input("每年获得的飞行常客里程数:"))
+    iceCream = float(input("每周消费的冰淇淋公升数："))
+    #打开文件的名称
+    filename = "datingTestSet.txt"
+    #打开并处理数据
+    datingDataMat, datingLabels = file2matrix(filename)
+    #训练数据归一化
+    normMat, ranges, minVals = autoNorm(datingDataMat)
+    #生成numpy数组，测试机
+    inArr = np.array([percentTats, ffMiles, iceCream])
+    #测试集数据归一化
+    norminArr = (inArr - minVals) / ranges
+    #返回分类结果
+    classifierResult = classify0(norminArr, normMat, datingLabels, 3)
+    #打印结果
+    print("你可能%s这个人" % (resultList[classifierResult-1]))
+    
+"""
+函数说明：main函数
+
+Parameters：
+        None
+    
+Returns：
+        None
+Create：
+        2020-4-10
+"""
+if __name__=='__main__':
+    classifyPerson()
+    
+```
+
+    玩视频游戏所耗时间的百分比:12
+    每年获得的飞行常客里程数:44000
+    每周消费的冰淇淋公升数：0.5
+    你可能讨厌这个人
+
+
+输入数据（12，44000，0.5）预测结果是“你可能讨厌这个人”。
+
 
 
 ```python

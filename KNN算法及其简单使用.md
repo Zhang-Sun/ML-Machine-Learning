@@ -270,6 +270,473 @@ if __name__=='__main__':
 
 kNN算法并不是一直都是正确的，我们可以使用多种方法检验分类器的正确率。为了测试分类器的效果，我们可以使用已知答案的数据。通过大量的测试数据，我们可以得到分类器的错误率-分类器给出错误结果的次数处以测试执行的总数。
 
+# 2.k-近邻算法实战之约会网站配对效果判定
+
+之前介绍的k-近邻算法实现方法并不是完整的k-近邻算法流程，完整的k-近邻算法的是流程一般是：
+1. 收集数据：可使用爬虫或使用免费的数据网站，一般来讲，数据保存在txt格式文档中便于后续解析处理。
+2. 准备数据：使用Pyhton解析、预处理数据。
+3. 分析数据：可以使用很多方法对数据进行分析，例如使用matplotilb对数据进行可视化处理。
+4. 测试算法：计算错误率。
+5. 使用算法：错误率在可接受范围内史，就可以运行k-近邻算法进行分类。
+
+
+以下是k-近邻算法的实战内容。
+
+## 2.1 实战背景
+
+海伦女士一直使用在线约会网站寻找自己的约会对象。经过一番总结后，她发现自己约会过的人可以进行如下分类：
+* 不喜欢的人
+* 魅力一般的人
+* 极具魅力的人
+
+
+海伦收集约会的数据已经有一段时间了，他把这些数据存放在文本文件datingTestSet.txt中，每个样本数据占据一行，总共有1000行。
+
+海伦手机的样本数据主要包含以下3种特征：
+* 每年获得的飞行常客里程数
+* 玩视频游戏所消耗的时间百分比
+* 每周消费的冰淇淋公升数
+
+
+<table>
+    <tr>
+        <td>里程数</td>
+        <td>时间百分比</td>
+        <td>冰淇淋公升数</td>
+        <td>态度</td>
+     </tr>
+    <tr>
+        <td>40920</td>
+        <td>8.326976</td>
+        <td>0.953952</td>
+        <td>largeDoses</td>
+    </tr>
+    <tr>
+        <td>14488</td>
+        <td>7.153469</td>
+        <td>1.673904</td>
+        <td>smallDoses</td>
+    </tr>
+     <tr>
+        <td>26052</td>
+        <td>1.441871</td>
+        <td>0.805124</td>
+        <td>didntLike</td>
+    </tr>
+</table>
+
+                                                                          
+                                                                          数据样例
+
+上表是数据的前三行，态度分为：largeDoses（极具魅力）、smallDoses（魅力一般）、didntLIke（不喜欢）。
+
+## 2.2 准备数据：数据解析
+
+将上述特征数据输入到分类器前，必须将待处理的数据的格式改变为分类器可接受的格式。而分类器所接受的格式是什么呢？上小结我们知道，要将数据分类为两部分，即特征矩阵和对应的分类标签向量。在代码中使用file2matrix函数来处理数据的格式。
+
+
+```python
+# -*- coding：UTF-8  -*- 
+import numpy as np
+"""
+函数说明：打开并解析数据文件、对数据进行分类：1代表不喜欢，2代表魅力一般，3代表极具魅力。
+
+Parameters:
+        filename -文件名
+Returns：
+        returnMat - 特征矩阵
+        classLabelVector - 分类Label向量
+    
+Create：
+        2020-4-10
+"""
+
+def file2matrix(filename):
+    #打开文件
+    with open(filename) as fr:
+        #读取文件内容
+        arrayOLines = fr.readlines()
+        #得到文件的行数
+        numberOfLines = len(arrayOLines)
+        #返回的Numpy矩阵，解析完成的数据：numberOfLines行，3列
+        returnMat = np.zeros((numberOfLines,3))
+        #返回的分类标签向量
+        classLabelVector = []
+        #行的索引值
+        index = 0
+        for line in arrayOLines:
+            #s.strip(rm),当rm为空时，默认删除空白符（包括‘\n’,'\r','\t',' '）
+            line = line.strip()
+            #使用s.split(str = "",num=string,cout(str))将字符串根据‘\t’分隔符进行切片
+            listFromLine = line.split('\t')
+            #将前三列提取出来放入特征矩阵中
+            returnMat[index,:] = listFromLine[0:3]
+            #根据文本中的标记的喜欢程度进行分类
+            if listFromLine[-1] == 'didntLike':
+                classLabelVector.append(1)
+            elif listFromLine[-1] == 'smallDoses':
+                classLabelVector.append(2)
+            elif listFromLine[-1] == 'largeDoses':
+                classLabelVector.append(3)
+            index += 1
+    return returnMat,classLabelVector
+
+"""
+函数说明：main函数测试数据处理
+
+Parameters：
+        None
+Returns：
+        None
+        
+Create：
+        2020-4-10
+"""
+
+if __name__=="__main__":
+    #打开的文件名
+    filename = 'datingTestSet.txt'
+    #打开并处理数据
+    datingDataMat, datingDataLabels = file2matrix(filename)
+    print(datingDataMat)
+    print(datingDataLabels)
+    
+```
+
+    [[4.0920000e+04 8.3269760e+00 9.5395200e-01]
+     [1.4488000e+04 7.1534690e+00 1.6739040e+00]
+     [2.6052000e+04 1.4418710e+00 8.0512400e-01]
+     ...
+     [2.6575000e+04 1.0650102e+01 8.6662700e-01]
+     [4.8111000e+04 9.1345280e+00 7.2804500e-01]
+     [4.3757000e+04 7.8826010e+00 1.3324460e+00]]
+    [3, 2, 1, 1, 1, 1, 3, 3, 1, 3, 1, 1, 2, 1, 1, 1, 1, 1, 2, 3, 2, 1, 2, 3, 2, 3, 2, 3, 2, 1, 3, 1, 3, 1, 2, 1, 1, 2, 3, 3, 1, 2, 3, 3, 3, 1, 1, 1, 1, 2, 2, 1, 3, 2, 2, 2, 2, 3, 1, 2, 1, 2, 2, 2, 2, 2, 3, 2, 3, 1, 2, 3, 2, 2, 1, 3, 1, 1, 3, 3, 1, 2, 3, 1, 3, 1, 2, 2, 1, 1, 3, 3, 1, 2, 1, 3, 3, 2, 1, 1, 3, 1, 2, 3, 3, 2, 3, 3, 1, 2, 3, 2, 1, 3, 1, 2, 1, 1, 2, 3, 2, 3, 2, 3, 2, 1, 3, 3, 3, 1, 3, 2, 2, 3, 1, 3, 3, 3, 1, 3, 1, 1, 3, 3, 2, 3, 3, 1, 2, 3, 2, 2, 3, 3, 3, 1, 2, 2, 1, 1, 3, 2, 3, 3, 1, 2, 1, 3, 1, 2, 3, 2, 3, 1, 1, 1, 3, 2, 3, 1, 3, 2, 1, 3, 2, 2, 3, 2, 3, 2, 1, 1, 3, 1, 3, 2, 2, 2, 3, 2, 2, 1, 2, 2, 3, 1, 3, 3, 2, 1, 1, 1, 2, 1, 3, 3, 3, 3, 2, 1, 1, 1, 2, 3, 2, 1, 3, 1, 3, 2, 2, 3, 1, 3, 1, 1, 2, 1, 2, 2, 1, 3, 1, 3, 2, 3, 1, 2, 3, 1, 1, 1, 1, 2, 3, 2, 2, 3, 1, 2, 1, 1, 1, 3, 3, 2, 1, 1, 1, 2, 2, 3, 1, 1, 1, 2, 1, 1, 2, 1, 1, 1, 2, 2, 3, 2, 3, 3, 3, 3, 1, 2, 3, 1, 1, 1, 3, 1, 3, 2, 2, 1, 3, 1, 3, 2, 2, 1, 2, 2, 3, 1, 3, 2, 1, 1, 3, 3, 2, 3, 3, 2, 3, 1, 3, 1, 3, 3, 1, 3, 2, 1, 3, 1, 3, 2, 1, 2, 2, 1, 3, 1, 1, 3, 3, 2, 2, 3, 1, 2, 3, 3, 2, 2, 1, 1, 1, 1, 3, 2, 1, 1, 3, 2, 1, 1, 3, 3, 3, 2, 3, 2, 1, 1, 1, 1, 1, 3, 2, 2, 1, 2, 1, 3, 2, 1, 3, 2, 1, 3, 1, 1, 3, 3, 3, 3, 2, 1, 1, 2, 1, 3, 3, 2, 1, 2, 3, 2, 1, 2, 2, 2, 1, 1, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 3, 1, 1, 2, 2, 1, 2, 2, 2, 3, 1, 1, 1, 3, 1, 3, 1, 3, 3, 1, 1, 1, 3, 2, 3, 3, 2, 2, 1, 1, 1, 2, 1, 2, 2, 3, 3, 3, 1, 1, 3, 3, 2, 3, 3, 2, 3, 3, 3, 2, 3, 3, 1, 2, 3, 2, 1, 1, 1, 1, 3, 3, 3, 3, 2, 1, 1, 1, 1, 3, 1, 1, 2, 1, 1, 2, 3, 2, 1, 2, 2, 2, 3, 2, 1, 3, 2, 3, 2, 3, 2, 1, 1, 2, 3, 1, 3, 3, 3, 1, 2, 1, 2, 2, 1, 2, 2, 2, 2, 2, 3, 2, 1, 3, 3, 2, 2, 2, 3, 1, 2, 1, 1, 3, 2, 3, 2, 3, 2, 3, 3, 2, 2, 1, 3, 1, 2, 1, 3, 1, 1, 1, 3, 1, 1, 3, 3, 2, 2, 1, 3, 1, 1, 3, 2, 3, 1, 1, 3, 1, 3, 3, 1, 2, 3, 1, 3, 1, 1, 2, 1, 3, 1, 1, 1, 1, 2, 1, 3, 1, 2, 1, 3, 1, 3, 1, 1, 2, 2, 2, 3, 2, 2, 1, 2, 3, 3, 2, 3, 3, 3, 2, 3, 3, 1, 3, 2, 3, 2, 1, 2, 1, 1, 1, 2, 3, 2, 2, 1, 2, 2, 1, 3, 1, 3, 3, 3, 2, 2, 3, 3, 1, 2, 2, 2, 3, 1, 2, 1, 3, 1, 2, 3, 1, 1, 1, 2, 2, 3, 1, 3, 1, 1, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 2, 2, 2, 3, 1, 3, 1, 2, 3, 2, 2, 3, 1, 2, 3, 2, 3, 1, 2, 2, 3, 1, 1, 1, 2, 2, 1, 1, 2, 1, 2, 1, 2, 3, 2, 1, 3, 3, 3, 1, 1, 3, 1, 2, 3, 3, 2, 2, 2, 1, 2, 3, 2, 2, 3, 2, 2, 2, 3, 3, 2, 1, 3, 2, 1, 3, 3, 1, 2, 3, 2, 1, 3, 3, 3, 1, 2, 2, 2, 3, 2, 3, 3, 1, 2, 1, 1, 2, 1, 3, 1, 2, 2, 1, 3, 2, 1, 3, 3, 2, 2, 2, 1, 2, 2, 1, 3, 1, 3, 1, 3, 3, 1, 1, 2, 3, 2, 2, 3, 1, 1, 1, 1, 3, 2, 2, 1, 3, 1, 2, 3, 1, 3, 1, 3, 1, 1, 3, 2, 3, 1, 1, 3, 3, 3, 3, 1, 3, 2, 2, 1, 1, 3, 3, 2, 2, 2, 1, 2, 1, 2, 1, 3, 2, 1, 2, 2, 3, 1, 2, 2, 2, 3, 2, 1, 2, 1, 2, 3, 3, 2, 3, 1, 1, 3, 3, 1, 2, 2, 2, 2, 2, 2, 1, 3, 3, 3, 3, 3, 1, 1, 3, 2, 1, 2, 1, 2, 2, 3, 2, 2, 2, 3, 1, 2, 1, 2, 2, 1, 1, 2, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 1, 3, 3, 2, 3, 2, 3, 3, 2, 2, 1, 1, 1, 3, 3, 1, 1, 1, 3, 3, 2, 1, 2, 1, 1, 2, 2, 1, 1, 1, 3, 1, 1, 2, 3, 2, 2, 1, 3, 1, 2, 3, 1, 2, 2, 2, 2, 3, 2, 3, 3, 1, 2, 1, 2, 3, 1, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 1, 3, 3, 3]
+
+
+可以看到我们的数据已经处理成功，接下来我们通过直观的图形化方式来观察数据。
+
+## 2.3分析数据：数据可视化
+
+编写showdatas函数，将数据可视化。
+
+
+```python
+%matplotlib inline
+# -*- coding：UTF-8 -*-
+
+from matplotlib.font_manager import FontProperties
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+import numpy as np
+
+"""
+函数说明：打开并解析数据文件、对数据进行分类：1代表不喜欢，2代表魅力一般，3代表极具魅力。
+
+Parameters:
+        filename -文件名
+Returns：
+        returnMat - 特征矩阵
+        classLabelVector - 分类Label向量
+    
+Create：
+        2020-4-10
+"""
+
+def file2matrix(filename):
+    #打开文件
+    with open(filename) as fr:
+        #读取文件内容
+        arrayOLines = fr.readlines()
+        #得到文件的行数
+        numberOfLines = len(arrayOLines)
+        #返回的Numpy矩阵，解析完成的数据：numberOfLines行，3列
+        returnMat = np.zeros((numberOfLines,3))
+        #返回的分类标签向量
+        classLabelVector = []
+        #行的索引值
+        index = 0
+        for line in arrayOLines:
+            #s.strip(rm),当rm为空时，默认删除空白符（包括‘\n’,'\r','\t',' '）
+            line = line.strip()
+            #使用s.split(str = "",num=string,cout(str))将字符串根据‘\t’分隔符进行切片
+            listFromLine = line.split('\t')
+            #将前三列提取出来放入特征矩阵中
+            returnMat[index,:] = listFromLine[0:3]
+            #根据文本中的标记的喜欢程度进行分类
+            if listFromLine[-1] == 'didntLike':
+                classLabelVector.append(1)
+            elif listFromLine[-1] == 'smallDoses':
+                classLabelVector.append(2)
+            elif listFromLine[-1] == 'largeDoses':
+                classLabelVector.append(3)
+            index += 1
+    return returnMat,classLabelVector
+
+"""
+函数说明：可视化数据
+
+Parameters：
+        datingDataMat - 特征矩阵
+        datingLabels - 分类Label
+
+Returns：
+        None
+        
+Create：
+        2020-4-10
+        
+"""
+
+def showdatas(datingDataMat, datingLabels):
+    #设置汉字格式
+    #本文是在mac电脑下，windows电脑路径换成：c:\windows\fonts\simsun.ttc
+    font = FontProperties(fname='/System/Library/Fonts/PingFang.ttc',size=14)
+    #将fig画布分隔成1行1列，不共享x轴和y轴，fig画布大小为（13，8）
+    #当nrow = 2，ncols=2时，代表fig画布被分成了4个区域，axs[0][0]代表第一行第一个区域
+    fig, axs = plt.subplots(nrows=2, ncols=2, sharex=False, sharey=False, figsize=(13,8))
+    
+    numberOfLabels = len(datingLabels)
+    LabelsColors = []
+    for i in datingLabels:
+        if i == 1:
+            LabelsColors.append('black')
+        elif i == 2:
+            LabelsColors.append('orange')
+        elif i == 3:
+            LabelsColors.append('red')
+    #画出散点图，以datingDataMat矩阵的第一列（飞行常客历程），第二列（玩游戏时间比例）数据画散点数据，散点大小为15，透明度为0.5
+    axs[0][0].scatter(x=datingDataMat[:,0],y=datingDataMat[:,1],color=LabelsColors,s=15,alpha=0.5)
+    #设置标题、x轴label，y轴label
+    axs0_title_text = axs[0][0].set_title(u'每年获得的飞行常客里程数与玩视频游戏所消耗的时间占比',FontProperties=font)
+    axs0_xlabel_text = axs[0][0].set_xlabel(u'每年获得的飞行常客里程数',FontProperties=font)
+    axs0_ylabel_text = axs[0][0].set_ylabel(u'玩游戏所消耗时间占比',FontProperties=font)
+    plt.setp(axs0_title_text, size=9, weight='bold', color='red')
+    plt.setp(axs0_xlabel_text, size=7, weight='bold',color='black')
+    plt.setp(axs0_ylabel_text, size=7, weight='bold',color='black')
+    
+    #画出散点图，以datingDataMat矩阵的第一列（飞行常客里程），第三列（冰淇凌）数据画散点数据，三点大小为15，透明度为0.5
+    axs[0][1].scatter(x=datingDataMat[:,0],y=datingDataMat[:,2], color=LabelsColors,s=15, alpha=0.5)
+    #设置标题，x轴label，y轴label
+    axs1_title_text = axs[0][1].set_title(u'每年获得的飞行常客里程数与每周消费的冰淇淋公升数',FontProperties=font)
+    axs1_xlabel_text = axs[0][1].set_xlabel(u'每年获得的飞行常客里程数',FontProperties=font)
+    axs1_ylabel_text = axs[0][1].set_ylabel(u'每周消费的冰淇淋公升数',FontProperties=font)
+    plt.setp(axs1_title_text, size=9, weight='bold', color='red')
+    plt.setp(axs1_xlabel_text, size=7, weight='bold',color='black')
+    plt.setp(axs1_ylabel_text, size=7, weight='bold',color='black')
+    
+    #画出散点图，以datingDataMat矩阵的第2列（玩游戏），第三列（冰淇凌）数据画散点数据，三点大小为15，透明度为0.5
+    axs[1][0].scatter(x=datingDataMat[:,1],y=datingDataMat[:,2], color=LabelsColors,s=15, alpha=0.5)
+    #设置标题，x轴label，y轴label
+    axs2_title_text = axs[1][0].set_title(u'玩视频游戏所消耗的时间占比与每周消费的冰淇淋公升数',FontProperties=font)
+    axs2_xlabel_text = axs[1][0].set_xlabel(u'玩视频游戏所消耗的时间占比',FontProperties=font)
+    axs2_ylabel_text = axs[1][0].set_ylabel(u'每周消费的冰淇淋公升数',FontProperties=font)
+    plt.setp(axs2_title_text, size=9, weight='bold', color='red')
+    plt.setp(axs2_xlabel_text, size=7, weight='bold',color='black')
+    plt.setp(axs2_ylabel_text, size=7, weight='bold',color='black')
+    
+    #设置图例
+    didntLike = mlines.Line2D([], [], color='black', marker='.', markersize=6, label='didntLike')
+    smallDoses = mlines.Line2D([], [], color='orange', marker='.', markersize=6, label='smallDoses')
+    largeDoses = mlines.Line2D([], [], color='red', marker='.', markersize=6, label='largeDoses')
+    
+    #添加图例
+    axs[0][0].legend(handles=[didntLike, smallDoses,largeDoses])
+    axs[0][1].legend(handles=[didntLike, smallDoses,largeDoses])
+    axs[1][0].legend(handles=[didntLike, smallDoses,largeDoses])
+    
+    #显示图片
+    plt.show()
+    
+"""
+函数说明：main函数
+
+Parameters：
+        None
+Returns：
+        None
+Modify：
+        2020-4-10
+"""
+if __name__=='__main__':
+    #打开的文件名
+    filename = "datingTestSet.txt"
+    #打开并处理数据
+    datingDataMat, datingLabels = file2matrix(filename)
+    showdatas(datingDataMat, datingLabels)
+
+    
+```
+
+
+![png](output_40_0.png)
+
+
+通过图像可以清晰的看出来数据的规律。
+
+## 2.4 准备数据：数据归一化
+
+下表给出了四组样本，如果想要计算样本3和样本4之间的距离，可以使用欧拉公式计算。
+
+<table>
+    <tr>
+        <td>样本</td>
+        <td>玩游戏所消耗的时间百分比</td>
+        <td>每年获得的飞行常用里程数</td>
+        <td>每周消费的冰淇淋公升数</td>
+        <td>样本分类</td>
+     </tr>
+    <tr>
+        <td>1</td>
+        <td>0.8</td>
+        <td>400</td>
+        <td>0.5</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>12</td>
+        <td>134000</td>
+        <td>0.9</td>
+        <td>3</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>0</td>
+        <td>20000</td>
+        <td>1.1</td>
+        <td>2</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>67</td>
+        <td>32000</td>
+        <td>0.1</td>
+        <td>2</td>
+      
+</table>
+
+计算方法如下图所示：
+
+$$ \sqrt[2]{(0-67)^2+(20000-32000)^2+(1.1-0.1)^2} $$
+
+我们发现，上面方程中对计算结果影响最大的是每年获得的飞行常用里程数，仅仅是因为它的数值比较大，而海伦认为每个特征的影响应该是相同的，因此我们需要给每个特征一个权重，来使三个特征的影响结果相同。
+
+在处理这种不同取值范围的特征值时，我们通常采用的方法就是将数值归一化，将取值范围统一到0到1或者-1到1之间。下面的公式可以将任意取值范围的特征值转化到0到1之间：$$ newValue = (oldValue-min)/(max-min) $$
+
+其中min和max分别是数据集中的最大值和最小值，虽然改变数值范围增加了分类器复杂度，但为了得到更准确的结果，我们必须这样做。编写autoNorm函数实现数据的归一化。
+
+
+```python
+# -*- coding: UTF-8 -*-
+import numpy as np
+
+"""
+函数说明:打开并解析文件，对数据进行分类：1代表不喜欢,2代表魅力一般,3代表极具魅力
+
+Parameters:
+    filename - 文件名
+Returns:
+    returnMat - 特征矩阵
+    classLabelVector - 分类Label向量
+
+Modify:
+    2020-04-10
+"""
+def file2matrix(filename):
+    #打开文件
+    fr = open(filename)
+    #读取文件所有内容
+    arrayOLines = fr.readlines()
+    #得到文件行数
+    numberOfLines = len(arrayOLines)
+    #返回的NumPy矩阵,解析完成的数据:numberOfLines行,3列
+    returnMat = np.zeros((numberOfLines,3))
+    #返回的分类标签向量
+    classLabelVector = []
+    #行的索引值
+    index = 0
+    for line in arrayOLines:
+        #s.strip(rm)，当rm空时,默认删除空白符(包括'\n','\r','\t',' ')
+        line = line.strip()
+        #使用s.split(str="",num=string,cout(str))将字符串根据'\t'分隔符进行切片。
+        listFromLine = line.split('\t')
+        #将数据前三列提取出来,存放到returnMat的NumPy矩阵中,也就是特征矩阵
+        returnMat[index,:] = listFromLine[0:3]
+        #根据文本中标记的喜欢的程度进行分类,1代表不喜欢,2代表魅力一般,3代表极具魅力
+        if listFromLine[-1] == 'didntLike':
+            classLabelVector.append(1)
+        elif listFromLine[-1] == 'smallDoses':
+            classLabelVector.append(2)
+        elif listFromLine[-1] == 'largeDoses':
+            classLabelVector.append(3)
+        index += 1
+    return returnMat, classLabelVector
+
+"""
+函数说明:对数据进行归一化
+
+Parameters:
+    dataSet - 特征矩阵
+Returns:
+    normDataSet - 归一化后的特征矩阵
+    ranges - 数据范围
+    minVals - 数据最小值
+
+Modify:
+    2020-04-10
+"""
+def autoNorm(dataSet):
+    #获得数据的最小值
+    minVals = dataSet.min(0)
+    maxVals = dataSet.max(0)
+    #最大值和最小值的范围
+    ranges = maxVals - minVals
+    #shape(dataSet)返回dataSet的矩阵行列数
+    normDataSet = np.zeros(np.shape(dataSet))
+    #返回dataSet的行数
+    m = dataSet.shape[0]
+    #原始值减去最小值
+    normDataSet = dataSet - np.tile(minVals, (m, 1))
+    #除以最大和最小值的差,得到归一化数据
+    normDataSet = normDataSet / np.tile(ranges, (m, 1))
+    #返回归一化数据结果,数据范围,最小值
+    return normDataSet, ranges, minVals
+
+"""
+函数说明:main函数
+
+Parameters:
+    无
+Returns:
+    无
+
+Modify:
+    2020-4-10
+"""
+if __name__ == '__main__':
+    #打开的文件名
+    filename = "datingTestSet.txt"
+    #打开并处理数据
+    datingDataMat, datingLabels = file2matrix(filename)
+    normDataSet, ranges, minVals = autoNorm(datingDataMat)
+    print(normDataSet)
+    print(ranges)
+    print(minVals)
+
+```
+
+    [[0.44832535 0.39805139 0.56233353]
+     [0.15873259 0.34195467 0.98724416]
+     [0.28542943 0.06892523 0.47449629]
+     ...
+     [0.29115949 0.50910294 0.51079493]
+     [0.52711097 0.43665451 0.4290048 ]
+     [0.47940793 0.3768091  0.78571804]]
+    [9.1273000e+04 2.0919349e+01 1.6943610e+00]
+    [0.       0.       0.001156]
+
+
+
 
 ```python
 

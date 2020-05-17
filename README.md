@@ -8,7 +8,8 @@ SelfLearning of Computer Tec
 # 目录
 <html>
     <a href=https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/KNN算法实战/KNN算法及其简单使用.md>1、KNN算法及其简单应用</a>
-</html>  
+</html>
+
 <html>
     <a href=https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/决策树算法实战/决策树算法及其机器简单使用.md>2、决策树算法及其简单应用</a>
 </html>  

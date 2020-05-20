@@ -25,3 +25,8 @@ SelfLearning of ML
     <a href=https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/决策树算法实战/逻辑回归算法及其简单应用.md>4、逻辑回归算法及其简单应用</a>
     <br>
 </html>
+
+<html>
+    <a href=https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/支持向量机算法实战/支持向量机算法及其简单应用.md>5、支持向量机算法及其简单应用</a>
+    <br>
+</html>

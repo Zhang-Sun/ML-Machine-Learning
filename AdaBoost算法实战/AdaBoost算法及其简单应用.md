@@ -25,9 +25,8 @@ bagging对训练数据采用自举采样（bootstrap sampling），即有放回�
 * 每次使用一个训练集得到一个模型，k个训练集总共得到k个模型。（注：这里并没有具体的分类算法或回归方法，我们可以根据具体问题采用不同的分类或回归方法，如决策树，感知器等）
 * 对分类问题：将上步得到的k个模型采用投票的方式得到分类结果；对回归问题，计算上述模型的均值作为最后的结果。（所有模型的权重相同）
 
-<html>
-    <img src='Bagging.png' width=500 height=300>
-</html>
+![image](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/Bagging.png)
+
 
 ### 6.1.2 随机森林（Random Forset，RF）
 
@@ -35,11 +34,9 @@ bagging对训练数据采用自举采样（bootstrap sampling），即有放回�
 
 参数k控制了随机性的引入程度，若令k=d，则基决策树的构建与传统的决策树相同，若令k=1，则是随机选择一个属性用于划分，一般情况下，推荐值$\log_2d$
 
-<html>
-    <img src='AdaBoost1.png' width=500 height=300>
-    <img src='AdaBoost2.png' width=500 height=300>
-    <img src='AdaBoost3.png' width=500 height=300>
-</html>    
+![image](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost1.png)
+![image](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost2.png)
+![image](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost3.png)   
 
 随机森林就是通过集成学习的思想将多棵树集成的一种算法，它的基本单元是决策树，而它的本质属于机器学习的一大分支-集成学习（Ensemble Learning）方法。
 
@@ -73,9 +70,8 @@ bagging对训练数据采用自举采样（bootstrap sampling），即有放回�
 
 分类问题中，它通过改变训练样本中的权重，学习多个分类器，并将这些分类器进行线性组合，提高分类性能。
 
-<html>
-    <img src='AdaBoost4.png' width=500 height=300>
-</html>    
+![png](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost4.png)
+ 
 
 ### 6.1.4 Bagging、Boosting二者之间的差别
 
@@ -113,58 +109,59 @@ bagging对训练数据采用自举采样（bootstrap sampling），即有放回�
 
 ## 6.2 AdaBoost
 
-<html>
-    <img src='AdaBoost5.png' width=600 height=300>
-</html>    
+![png](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost5.png)
+
 
 ### 6.2.1 AdaBoost训练方法：基于错误提示分类器的性能
 
-<html>
-    <img src='AdaBoost6.png' width=600 height=300>
-    <img src='AdaBoost7.png' width=600 height=300>
-</html>    
+![png](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost6.png)
+![png](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost7.png)
+   
 
 步骤如下：
 
 **1. 计算样本权重**
 
-训练数据中的每个样本，赋予其权重，即样本权重，用向量D表示，这些权重都初始化为相等的值。假设有n个样本的训练集：$$\{(x_1,y_1),(x_2,y_2),...,(x_n,y_n)\}$$
+训练数据中的每个样本，赋予其权重，即样本权重，用向量D表示，这些权重都初始化为相等的值。假设有n个样本的训练集：
+![](http://latex.codecogs.com/gif.latex?{(x_1,y_1),(x_2,y_2),...,(x_n,y_n)})
 
 **2. 计算错误率**
 
-利用第一个弱分类器h1对其进行学习，学习完成后进行错误率$\varepsilon$的统计：$$\varepsilon=\frac{未正确分类的样本数目}{所有样本的数目}$$
+利用第一个弱分类器h1对其进行学习，学习完成后进行错误率![](http://latex.codecogs.com/gif.latex?\\varepsilon)的统计：
+![](http://latex.codecogs.com/gif.latex?\\varepsilon=\frac{未正确分类的样本数目}{所有样本的数目})
 
 **3. 计算弱学习算法权重**
 
-弱学习算法也有一个权重，用向量$\alpha$表示，利用错误率计算权重$\alpha$:
+弱学习算法也有一个权重，用向量![](http://latex.codecogs.com/gif.latex?\\alpha)表示，利用错误率计算权重
+![](http://latex.codecogs.com/gif.latex?\\alpha):
 
-$$\alpha=\frac{1}{2}ln(\frac{1-\varepsilon}{\varepsilon})$$
+![](http://latex.codecogs.com/gif.latex?\\alpha=\frac{1}{2}ln(\frac{1-\varepsilon}{\varepsilon}))
 
 **4. 更新样本权重**
 
 在第一次学习之后，需要更新样本的权重，以使得提高在第一分类中被错分的样本的权重，在接下来的学习中可以重点对其进行学习：
 
-$$D_{t+1}(i)=\frac{D_t(i)}{Z_t}x\{\frac{e^{-\alpha{t}} if h_t(x_i)=y_i}{e^{\alpha{t}} if h_t(x_t)\neq{y_i}}$$
+![](http://latex.codecogs.com/gif.latex?D_{t+1}(i)=\\frac{D_t(i)}{Z_t}x\{\frac{e^{-\alpha{t}} if h_t(x_i)=y_i}{e^{\alpha{t}} if h_t(x_t)\neq{y_i}})
 
-其中，$h_t(x_i)=y_i$表示对第i个样本训练正确，不等于则表示分类错误。Zt是一个归一因子：
+其中，![](http://latex.codecogs.com/gif.latex?h_t(x_i)=y_i)表示对第i个样本训练正确，不等于则表示分类错误。Zt是一个归一因子：
 
-$$Z_t=sum(D)$$
+![](http://latex.codecogs.com/gif.latex?Z_t=sum(D))
 
 这个公式我们可以继续简化，将两个公式进行合并，化简如下：
 
-$$D_{t+1}(i)=\frac{D_t(i)exp(-\alpha_ty_ih_y(x_i))}{sum(D)}$$
+![](http://latex.codecogs.com/gif.latex?D_{t+1}(i)=\\frac{D_t(i)exp(-\alpha_ty_ih_y(x_i))}{sum(D)})
 
 **5. 重复学习**
 
 重复进行学习，这样经过t轮的学习后，就会得到t个弱分类学习算法，权重，弱分类器的输出以及最终的AdaBoost算法的输出，分别如下：
 
-$$\{h_1,h_2,...,h_t\}$$
+![](http://latex.codecogs.com/gif.latex?{h_1,h_2,...,h_t})
 
-$$\{\alpha_1,\alpha_2,...,\alpha_t\}$$
+![](http://latex.codecogs.com/gif.latex?{\\alpha_1,\alpha_2,...,\alpha_t})
 
-$$\{h_1(X),h_2(X),...,h_t(X)\}$$
+![](http://latex.codecogs.com/gif.latex?{h_1(X),h_2(X),...,h_t(X)})
 
-$$H(X)=sign(\sum_{i=1}^t\alpha_ih_1(X))$$
+![](http://latex.codecogs.com/gif.latex?H(X)=sign(\\sum_{i=1}^t\alpha_ih_1(X)))
 
 ### 6.2.2 使用slearn的AdaBoost
 
@@ -173,11 +170,6 @@ $$H(X)=sign(\sum_{i=1}^t\alpha_ih_1(X))$$
 class sklearn.ensemble.AdaBoostClassifier(base_estimator=None, n_estimators=50, learning_rate=1.0, algorithm=’SAMME.R’, random_state=None)
 ```
 
-
-      File "<ipython-input-1-01081068245a>", line 1
-        class sklearn.ensemble.AdaBoostClassifier(base_estimator=None, n_estimators=50, learning_rate=1.0, algorithm=’SAMME.R’, random_state=None)
-                     ^
-    SyntaxError: invalid syntax
 
 
 
@@ -251,52 +243,53 @@ if __name__=='__main__':
 
 到现在为止，我们都是基于错误率来衡量分类器任务的成功程度的。错误率指的是在所有测试集中错分的样本所占的比例。实际上，这样的度量错误的掩盖了样本如何被错分的事实。在机器学习中，有一个普遍使用的称为**混淆矩阵**（confusion matrix）的工具，它可以帮助人们更好的了解分类中的错误。有这样一个关于在房子周围可能发现的动物类型的预测，这个预测的三个类的混淆矩阵如下：
 
-<html>
-    <img src='AdaBoost8.png' width=700 height=700>
-</html>    
+![png](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost8.png)
+    
 
 利用混淆矩阵，就可以更好的理解分类中的错误了。如果矩阵中的非对角元素均为0，，就会得到一个完美的分类器。
 
-<html>
-    <img src='AdaBoost9.png' width=700 height=500>
-    </html>
+![png](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost9.png)
+
 
 一、各个指标如下所示：
 
 1. Accuracy  
 
 
-模型的精度，即模型预测正确的个数/样本总个数，一般情况下，模型的精度越高，，说明模型的效果越好。$$Accuracy=\frac{TP+TN}{TP+FN+FP+TN}$$
+模型的精度，即模型预测正确的个数/样本总个数，一般情况下，模型的精度越高，，说明模型的效果越好。![](http://latex.codecogs.com/gif.latex?Accuracy=\\frac{TP+TN}{TP+FN+FP+TN})
 
 2. Precision(正确率Positive predict value，PPV)
 
-正确率，阳性预测值。即在模型预测为正类的样本中，真正的正样本所占的比例，一般情况下正确率越高，说明模型越好。$$Precision=\frac{TP}{TP+FP}$$
+正确率，阳性预测值。即在模型预测为正类的样本中，真正的正样本所占的比例，一般情况下正确率越高，说明模型越好。
+![](http://latex.codecogs.com/gif.latex?Precision=\\frac{TP}{TP+FP})
 
 3. False discovery rate(FDR)
 
-伪发现率，也就是错误发现率，表示模型预测为正类的样本中，真正为负类的样本所占的比例，一般情况下，错误发现率越小，说明模型效果越好。$$FDR=\frac{FP}{TP+FP}$$
+伪发现率，也就是错误发现率，表示模型预测为正类的样本中，真正为负类的样本所占的比例，一般情况下，错误发现率越小，说明模型效果越好。
+![](http://latex.codecogs.com/gif.latex?FDR=\\frac{FP}{TP+FP})
 
 4. False omission rate(FOR)
 
-错误遗漏率，表示在模型预测为负类的样本中，实际为正类的样本所占的比例。即评价模型“遗漏”掉的正类的多少。$$FOR=\frac{FN}{FN+TN}$$
+错误遗漏率，表示在模型预测为负类的样本中，实际为正类的样本所占的比例。即评价模型“遗漏”掉的正类的多少。
+![](http://latex.codecogs.com/gif.latex?FOR=\\frac{FN}{FN+TN})
 
 5. Negative predictive value(NPV)
 
-阴性行预测值，表示在模型预测为负类的恶样本中，实际为负类的样本所占的比例。$$NPV=\frac{TN}{TN+FN}$$
+阴性行预测值，表示在模型预测为负类的恶样本中，实际为负类的样本所占的比例。![](http://latex.codecogs.com/gif.latex?NPV=\\frac{TN}{TN+FN})
 
 6. True positive rate(Recall)
 
-召回率，真正类率，表示模型预测为正类的样本的数量占总的正样本数量的比值。$$Recall=\frac{TP}{TP+FN}$$
+召回率，真正类率，表示模型预测为正类的样本的数量占总的正样本数量的比值。![](http://latex.codecogs.com/gif.latex?Recall=\\frac{TP}{TP+FN})
 
 一般情况下，Recall值越高，说明有更多的正类样本被预测正确，说明模型效果越好。
 
 7. False positive rate（FPR），Fall-out
 
-假正率，表示的是，模型预测为正类的样本中,实际负类样本数量的比值。$$Fall-out=\frac{FP}{FP+TN}$$
+假正率，表示的是，模型预测为正类的样本中,实际负类样本数量的比值。![](http://latex.codecogs.com/gif.latex?Fall-out=\\frac{FP}{FP+TN})
 
 8. False negative rate（FNR），Miss rate
 
-假负类率，缺失率，模型预测为负的样本中，是正类的数量，占真实正类样本的比值。$$FNR=\frac{FN}{FN+TN}$$
+假负类率，缺失率，模型预测为负的样本中，是正类的数量，占真实正类样本的比值。![](http://latex.codecogs.com/gif.latex?FNR=\\frac{FN}{FN+TN})
 
 缺失值越小，说明模型的效果越好。
 
@@ -468,7 +461,6 @@ if __name__ == '__main__':
 
 
 
-![png](output_113_1.png)
 
 
 **ROC曲线介绍**
@@ -512,22 +504,18 @@ Shrinkage（缩减），相当于学习速率。xgboost在进行完一次迭代�
   
 xgboost的目标函数如下：
 
-<html>
-    <img src='AdaBoost10.png' width=500 height=300>
-</html>    
+![png](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost10.png)
+  
 
 其中正则项控制着模型的复杂度，包括了叶子节点数目T和leaf score的L2模的平方： 
 
-<html>
-    <img src='AdaBoost11.png' width=500 height=500>
-</html>    
+![png](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost11.png)   
 
 那这个跟剪枝有什么关系呢？？?  
 跳过一系列推导，我们直接来看xgboost中树节点分裂时所采用的公式： 
 
-<html>
-    <img src='AdaBoost12.png' width=500 height=300>
-</html>    
+![png](https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/AdaBoost算法实战/图像/AdaBoost12.png)
+   
 
 这个公式形式上跟ID3算法（采用entropy计算增益） 、CART算法（采用gini指数计算增益） 是一致的，都是用分裂后的某种值 减去 分裂前的某种值，从而得到增益。为了限制树的生长，我们可以加入阈值，当增益大于阈值时才让节点分裂，上式中的gamma即阈值，它是正则项里叶子节点数T的系数，所以xgboost在优化目标函数的同时相当于做了预剪枝。另外，上式中还有一个系数lambda，是正则项里leaf score的L2模平方的系数，对leaf score做了平滑，也起到了防止过拟合的作用，这个是传统GBDT里不具备的特性。
 

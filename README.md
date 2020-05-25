@@ -30,3 +30,11 @@ SelfLearning of ML
     <a href=https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/支持向量机算法实战/支持向量机算法及其简单应用.md>5、支持向量机算法及其简单应用</a>
     <br>
 </html>
+
+<html>
+    <a href=https://github.com/Zhang-Sun/ML-Machine-Learning/blob/master/支持向量机算法实战/AdaBoost算法及其简单应用>6、Ada
+   Boost算法及其简单应用</a>
+    <br>
+</html>    
+   
+
